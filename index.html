@@ -646,7 +646,7 @@ textarea.post{width:100%;min-height:260px;background:var(--surface);color:var(--
     var pr = $("vPrecios"); pr.textContent = "";
     if(p.precio) pr.appendChild(el("span","vprecio",precio(p.precio)));
     if(p.antes && p.antes>p.precio){ pr.appendChild(el("span","vantes",precio(p.antes))); pr.appendChild(el("span","vdesc","-" + Math.round((1-p.precio/p.antes)*100) + "%")); }
-    $("vVer").href = seguro(p.link); var vc = $("vComp"); vc.textContent = ""; vc.appendChild(botonCompartir(p));
+    $("vVer").href = seguro(p.link); var vc = $("vComp"); vc.textContent = ""; vc.appendChild(botonCompartir(p, true));
     $("vCuenta").textContent = (vIdx+1) + " de " + vLista.length;
     $("vAnt").hidden = $("vSig").hidden = vLista.length < 2;
     var fallo = setTimeout(function(){ if(v.readyState < 2) avisoVideo(p); }, 9000);
@@ -689,30 +689,30 @@ textarea.post{width:100%;min-height:260px;background:var(--surface);color:var(--
   /* ---- Compartir ofertas ---- */
   var SITIO = /cazaofertas\.vip$/i.test(location.hostname) ? location.origin + "/" : "https://cazaofertas.vip/";
   var ICONO_COMP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
-  function urlOferta(p){ return SITIO + "#p=" + encodeURIComponent(p.id); }
-  function textoOferta(p){
+  function urlOferta(p, vid){ return SITIO + (vid ? "#v=" : "#p=") + encodeURIComponent(p.id); }
+  function textoOferta(p, vid){
     var t = p.nombre;
     if(p.precio){ t += " a " + precio(p.precio); if(p.antes && p.antes > p.precio) t += " (antes " + precio(p.antes) + ", -" + Math.round((1-p.precio/p.antes)*100) + "%)"; }
-    return "Mira esta oferta en " + p.tienda + ": " + t + ".";
+    return (vid ? "Mira este video: " : "Mira esta oferta en " + p.tienda + ": ") + t + ".";
   }
-  function botonCompartir(p){
+  function botonCompartir(p, vid){
     var b = el("button","compartir"); b.type = "button"; b.innerHTML = ICONO_COMP;
     b.setAttribute("aria-label","Compartir " + p.nombre); b.title = "Compartir";
-    b.onclick = function(ev){ ev.stopPropagation(); ev.preventDefault(); compartir(p); };
+    b.onclick = function(ev){ ev.stopPropagation(); ev.preventDefault(); compartir(p, vid); };
     return b;
   }
-  function compartir(p){
-    var url = urlOferta(p), txt = textoOferta(p);
+  function compartir(p, vid){
+    var url = urlOferta(p, vid), txt = textoOferta(p, vid);
     if(navigator.share){
       var datos = { title: "Caza Ofertas VIP", text: txt, url: url };
-      navigator.share(datos).catch(function(err){ if(!err || err.name !== "AbortError") hojaCompartir(p); });
+      navigator.share(datos).catch(function(err){ if(!err || err.name !== "AbortError") hojaCompartir(p, vid); });
       return;
     }
-    hojaCompartir(p);
+    hojaCompartir(p, vid);
   }
-  function hojaCompartir(p){
-    var url = urlOferta(p), txt = textoOferta(p), todo = txt + " " + url;
-    $("compImg").src = p.img || ""; $("compTxt").textContent = p.nombre;
+  function hojaCompartir(p, vid){
+    var url = urlOferta(p, vid), txt = textoOferta(p, vid), todo = txt + " " + url;
+    $("compImg").src = p.img || ""; $("compTxt").textContent = p.nombre; $("compTit").textContent = vid ? "Compartir video" : "Compartir oferta";
     $("compWa").href = "https://wa.me/?text=" + encodeURIComponent(todo);
     $("compFb").href = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url);
     $("compTg").href = "https://t.me/share/url?url=" + encodeURIComponent(url) + "&text=" + encodeURIComponent(txt);
@@ -729,9 +729,10 @@ textarea.post{width:100%;min-height:260px;background:var(--surface);color:var(--
   $("veloComp").addEventListener("click", function(e){ if(e.target === this) this.hidden = true; });
   document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !$("veloComp").hidden) $("veloComp").hidden = true; });
   function irAOferta(){
-    var m = location.hash.match(/^#p=([^&]+)/); if(!m) return;
-    var id = decodeURIComponent(m[1]), p = data.productos.find(function(x){ return x.id === id; });
+    var m = location.hash.match(/^#(p|v)=([^&]+)/); if(!m) return;
+    var id = decodeURIComponent(m[2]), p = data.productos.find(function(x){ return x.id === id; });
     if(!p) return;
+    if(m[1] === "v" && p.video){ abrirVideo(p.id, null); return; }
     filtro.cat = "Todo"; filtro.tienda = "Todas"; filtro.q = ""; var qi = $("q"); if(qi) qi.value = "";
     chips(); render();
     var c = document.getElementById("p-" + id); if(!c) return;
