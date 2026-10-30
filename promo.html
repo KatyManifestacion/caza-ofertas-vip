@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>promo</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;font-family:Poppins,system-ui,sans-serif}
+#w{position:fixed;inset:0;display:flex;background:#6a2ee8}
+#izq{flex:0 0 50%;background:#fff;display:flex;align-items:center;justify-content:center;position:relative}
+#izq img{max-width:84%;max-height:86%;object-fit:contain}
+#off{position:absolute;top:5vh;left:2.5vw;background:#ff3b5c;color:#fff;font-weight:800;font-size:5.2vh;padding:1vh 2.2vh;border-radius:2vh}
+#der{flex:1;color:#fff;padding:6vh 3.5vw;display:flex;flex-direction:column;justify-content:center;gap:2.2vh}
+#tienda{align-self:flex-start;background:rgba(255,255,255,.16);border-radius:99px;padding:.8vh 2.4vh;font-size:3.4vh;font-weight:600}
+#nom{font-size:6.4vh;font-weight:800;line-height:1.12;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#antes{font-size:4.4vh;opacity:.85;text-decoration:line-through}
+#precio{font-size:12vh;font-weight:800;color:#ffc828;line-height:1}
+#pie{margin-top:2vh;display:flex;align-items:center;gap:1.6vh;font-size:3.8vh;font-weight:600}
+#pie img{height:7vh;border-radius:1.4vh}
+</style></head><body><div id="w">
+<div id="izq"><img id="img"><div id="off"></div></div>
+<div id="der"><div id="tienda"></div><div id="nom"></div><div><div id="antes"></div><div id="precio"></div></div>
+<div id="pie"><img src="/perfil.jpg"><span>cazaofertas.vip</span></div></div></div>
+<script>
+var q=new URLSearchParams(location.search),$=function(i){return document.getElementById(i)};
+function m(n){n=Math.round(+n);return '$'+n.toLocaleString('en-US')}
+$('img').src=q.get('img')||'';$('nom').textContent=q.get('nombre')||'';
+$('tienda').textContent='🛒 '+(q.get('tienda')||'');
+var a=+q.get('antes'),p=+q.get('precio');$('antes').textContent=a?'Antes '+m(a):'';$('precio').textContent=m(p);
+$('off').textContent=a?'-'+Math.round(100*(1-p/a))+'%':'';if(!a)$('off').style.display='none';
+</script></body></html>
