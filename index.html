@@ -615,12 +615,22 @@ textarea.post{width:100%;min-height:260px;background:var(--surface);color:var(--
   /* ---- Videos en ventana flotante ---- */
   var vLista = [], vIdx = 0, hlsObj = null, hlsCarga = null, ultimaLista = [];
   function conVideo(l){ return (l||data.productos).filter(function(p){ return p.video && !p.agotado && !(p.expira && Date.parse(p.expira) <= Date.now()); }); }
+  var VISTOS_KEY = "cov_videos_vistos";
+  function leerVistos(){ try{ return JSON.parse(localStorage.getItem(VISTOS_KEY) || "[]"); }catch(e){ return []; } }
+  var vistos = leerVistos();
+  function marcarVisto(id){
+    if(vistos.indexOf(id) > -1) return;
+    vistos.push(id); if(vistos.length > 600) vistos = vistos.slice(-600);
+    try{ localStorage.setItem(VISTOS_KEY, JSON.stringify(vistos)); }catch(e){}
+  }
+  function primeroSinVer(lista){ for(var i=0;i<lista.length;i++){ if(vistos.indexOf(lista[i].id) === -1) return i; } return -1; }
   function actualizarFabVideo(lista){
     ultimaLista = lista; var v = conVideo(lista), b = $("fabVideo");
     if(!v.length || modoSel){ b.hidden = true; return; }
     b.hidden = false; b.classList.toggle("con-admin", admin);
-    $("fabVideoImg").src = v[0].img || "";
-    b.querySelector("span").textContent = v.length === 1 ? "Ver video" : "Ver " + v.length + " videos";
+    var pend = v.filter(function(p){ return vistos.indexOf(p.id) === -1; }).length;
+    b.querySelector("span").textContent = (pend > 0 && pend < v.length) ? "Seguir viendo (" + pend + " nuevos)" : (v.length === 1 ? "Ver video" : "Ver " + v.length + " videos");
+    var sig = v[Math.max(0, primeroSinVer(v))]; $("fabVideoImg").src = sig.img || "";
   }
   function cargarHls(){
     if(window.Hls) return Promise.resolve(window.Hls);
@@ -651,6 +661,7 @@ textarea.post{width:100%;min-height:260px;background:var(--surface);color:var(--
     $("vAnt").hidden = $("vSig").hidden = vLista.length < 2;
     var fallo = setTimeout(function(){ if(v.readyState < 2) avisoVideo(p); }, 9000);
     v.onplaying = v.oncanplay = function(){ clearTimeout(fallo); $("vCarga").hidden = true; };
+    v.ontimeupdate = function(){ if(v.currentTime > 3 || (v.duration && v.currentTime > v.duration * 0.8)) marcarVisto(p.id); };
     v.onerror = function(){ clearTimeout(fallo); avisoVideo(p); };
     var src = p.video;
     if(!/\.m3u8(\?|$)/i.test(src) || v.canPlayType("application/vnd.apple.mpegurl")){ v.src = src; v.play().catch(function(){}); return; }
@@ -670,10 +681,15 @@ textarea.post{width:100%;min-height:260px;background:var(--surface);color:var(--
   }
   function cerrarVideo(){
     var v = $("vVideo"); v.pause(); if(hlsObj){ hlsObj.destroy(); hlsObj = null; } v.removeAttribute("src"); v.load();
-    $("veloVideo").hidden = true; document.body.style.overflow = "";
+    $("veloVideo").hidden = true; document.body.style.overflow = ""; actualizarFabVideo(ultimaLista);
   }
-  function moverVideo(d){ if(vLista.length < 2) return; vIdx = (vIdx + d + vLista.length) % vLista.length; mostrarVideo(); }
-  $("fabVideo").onclick = function(){ var v = conVideo(ultimaLista); abrirVideo(v.length ? v[0].id : null, ultimaLista); };
+  function moverVideo(d){ if(vLista.length < 2) return; if(d > 0) marcarVisto(vLista[vIdx].id); vIdx = (vIdx + d + vLista.length) % vLista.length; mostrarVideo(); }
+  $("fabVideo").onclick = function(){
+    var v = conVideo(ultimaLista); if(!v.length) return;
+    var i = primeroSinVer(v);
+    if(i === -1){ var ids = v.map(function(p){ return p.id; }); vistos = vistos.filter(function(x){ return ids.indexOf(x) === -1; }); try{ localStorage.setItem(VISTOS_KEY, JSON.stringify(vistos)); }catch(e){} i = 0; }
+    abrirVideo(v[i].id, ultimaLista);
+  };
   $("vCerrar").onclick = cerrarVideo;
   $("vAnt").onclick = function(){ moverVideo(-1); }; $("vSig").onclick = function(){ moverVideo(1); };
   $("veloVideo").addEventListener("click", function(e){ if(e.target === this) cerrarVideo(); });
