@@ -20,8 +20,12 @@
 <script>
 var q=new URLSearchParams(location.search),$=function(i){return document.getElementById(i)};
 function m(n){n=Math.round(+n);return '$'+n.toLocaleString('en-US')}
-$('img').src=q.get('img')||'';$('nom').textContent=q.get('nombre')||'';
-$('tienda').textContent='🛒 '+(q.get('tienda')||'');
-var a=+q.get('antes'),p=+q.get('precio');$('antes').textContent=a?'Antes '+m(a):'';$('precio').textContent=m(p);
-$('off').textContent=a?'-'+Math.round(100*(1-p/a))+'%':'';if(!a)$('off').style.display='none';
+function pinta(o){$('img').src=o.img||'';$('nom').textContent=o.nombre||'';$('tienda').textContent='🛒 '+(o.tienda||'');
+var a=+o.antes,p=+o.precio;$('antes').textContent=a?'Antes '+m(a):'';$('precio').textContent=m(p);
+$('off').textContent=a?'-'+Math.round(100*(1-p/a))+'%':'';$('off').style.display=a?'':'none';document.body.setAttribute('data-listo','1');}
+if(q.get('id')){fetch('/?nc='+Date.now()).then(function(r){return r.text()}).then(function(h){
+var d=new DOMParser().parseFromString(h,'text/html').getElementById('ofertas-data');var ps=JSON.parse(d.textContent).productos;
+var p=ps.find(function(x){return x.id===q.get('id')});if(!p){$('nom').textContent='No encontrado';return}
+pinta({img:q.get('img')||p.imgUrl||p.img,nombre:q.get('nombre')||p.nombre,tienda:p.tienda,antes:p.antes,precio:p.precio});});}
+else pinta({img:q.get('img'),nombre:q.get('nombre'),tienda:q.get('tienda'),antes:q.get('antes'),precio:q.get('precio')});
 </script></body></html>
