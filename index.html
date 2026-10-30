@@ -81,6 +81,13 @@ header.hero{display:grid;gap:12px;justify-items:start}
 .admin-btns button{flex:1;font:600 13px var(--body);padding:8px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
 .admin-btns button.peligro{border-color:var(--rosa);color:var(--rosa)}
 .vacio{text-align:center;padding:40px 10px;color:var(--ink-muted)}
+.fuera{margin:18px 0 8px;padding:16px;border:1px dashed var(--line);border-radius:16px;text-align:center;background:var(--surface-raised)}
+.fuera p{margin:0 0 12px;color:var(--ink)}
+.fuera .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.fuera a{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:12px;font-weight:700;text-decoration:none;color:#fff}
+.fuera a.amz{background:#232f3e}.fuera a.ml{background:#2d3277}
+.fuera small{display:block;margin-top:10px;color:var(--ink-muted);font-size:12px}
+.fuera[hidden]{display:none!important}
 
 footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink-muted);font-size:13px;max-width:65ch}
 footer strong{color:var(--ink)}
@@ -200,6 +207,7 @@ textarea.post{width:100%;min-height:260px;background:var(--surface);color:var(--
   <div class="cuenta" id="cuenta"></div>
   <div class="grid" id="grid"></div>
   <div class="vacio" id="vacio" hidden="">No hay productos con estos filtros. Prueba otra categoría o tienda.</div>
+  <div class="fuera" id="fuera" hidden=""><p id="fueraTxt"></p><div class="btns"><a class="amz" id="fueraAmz" target="_blank" rel="noopener sponsored">Buscar en Amazon</a><a class="ml" id="fueraMl" target="_blank" rel="noopener sponsored">Buscar en Mercado Libre</a></div><small>Te llevamos a los resultados de la tienda para que compares todas las opciones.</small></div>
 
   <footer>
     <p><strong>Aviso:</strong> esta página contiene enlaces de afiliado. Si compras a través de ellos, puedo recibir una comisión sin costo extra para ti. Los precios y la disponibilidad pueden cambiar en cada tienda.</p>
@@ -363,16 +371,27 @@ textarea.post{width:100%;min-height:260px;background:var(--surface);color:var(--
     return "Quedan " + (h ? h + " h " : "") + m + " min";
   }
   setInterval(function(){ if(data.productos.some(function(p){ return p.expira; })) render(); }, 60000);
+  function sinAcentos(t){ return t.normalize ? t.normalize("NFD").replace(/[\u0300-\u036f]/g,"") : t; }
+  function pintaFuera(q, n){
+    var box = $("fuera"); if(!box) return;
+    if(q.length < 2){ box.hidden = true; return; }
+    $("fueraTxt").textContent = n ? "¿Quieres ver más opciones de «" + q + "»?" : "No tengo «" + q + "» en mis ofertas de hoy, pero puedes buscarlo aquí:";
+    $("fueraAmz").href = "https://www.amazon.com.mx/s?k=" + encodeURIComponent(q) + "&tag=katiastephani-20";
+    var slug = sinAcentos(q.toLowerCase()).replace(/[^a-z0-9ñ\s]/g," ").trim().replace(/\s+/g,"-");
+    $("fueraMl").href = "https://listado.mercadolibre.com.mx/" + encodeURIComponent(slug).replace(/%2D/g,"-") + "?matt_word=katiastephanielopeztlaque&matt_tool=94945486";
+    box.hidden = false;
+  }
   function render(){
     var g = $("grid"); g.textContent = "";
-    var q = filtro.q.trim().toLowerCase();
+    var q = filtro.q.trim().toLowerCase(), qn = sinAcentos(q).split(/\s+/).filter(Boolean);
     var lista = data.productos.filter(function(p){
       if(p.expira && !admin && Date.parse(p.expira) <= Date.now()) return false;
       if(p.agotado && !admin) return false;
-      return (filtro.cat==="Todo" || p.cat===filtro.cat) && (filtro.tienda==="Todas" || p.tienda===filtro.tienda) && (!q || p.nombre.toLowerCase().indexOf(q)>-1);
+      return (filtro.cat==="Todo" || p.cat===filtro.cat) && (filtro.tienda==="Todas" || p.tienda===filtro.tienda) && (!qn.length || qn.every(function(w){ return sinAcentos(p.nombre.toLowerCase()).indexOf(w)>-1; }));
     }).sort(function(a,b){ var fa = a.expira && Date.parse(a.expira) > Date.now() ? 1 : 0, fb = b.expira && Date.parse(b.expira) > Date.now() ? 1 : 0; return (fb-fa) || ((b.top?1:0)-(a.top?1:0)); });
     $("cuenta").textContent = lista.length + (lista.length===1 ? " oferta" : " ofertas");
-    $("vacio").hidden = lista.length>0;
+    $("vacio").hidden = lista.length>0 || filtro.q.trim().length>=2;
+    pintaFuera(filtro.q.trim(), lista.length);
     lista.forEach(function(p){
       var c = el("article","card"+(p.top?" top":"")+(modoSel?" elegible":"")+(modoSel&&elegidos[p.id]?" elegida":""));
       if(modoSel){ c.onclick = function(ev){ ev.preventDefault(); if(elegidos[p.id]) delete elegidos[p.id]; else elegidos[p.id]=true; render(); }; }
