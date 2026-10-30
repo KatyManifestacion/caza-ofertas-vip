@@ -1,3 +1,4 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>foto</title>
-<style>html,body{margin:0;background:#fff;height:100%}#c{position:fixed;left:0;top:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:#fff}#c img{max-width:92%;max-height:92%;object-fit:contain}</style></head>
-<body><div id="c"><img id="i"></div><script>document.getElementById('i').src=new URLSearchParams(location.search).get('u')||'';</script></body></html>
+<style>html,body{margin:0;background:#fff;height:100%;overflow:hidden}#c{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#fff}#c img{max-width:92%;max-height:92%;object-fit:contain}
+.full #c img{max-width:100%;max-height:100%;height:100%}.cover #c img{width:100%;height:100%;max-width:none;max-height:none;object-fit:cover}</style></head>
+<body><div id="c"><img id="i"></div><script>var q=new URLSearchParams(location.search);document.getElementById('i').src=q.get('u')||'';if(q.get('fit'))document.body.className=q.get('fit');</script></body></html>
